@@ -25,7 +25,7 @@ jobs:
           npm ci
           npm run build --if-present
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_BASE_URL }}
 
 
       - name: Upload artifact for deployment job
@@ -64,5 +64,6 @@ jobs:
           package: dist
 
           
+
 
 
