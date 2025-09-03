@@ -109,67 +109,68 @@ const Profile: React.FC = () => {
     // await fetch('/api/profile', { method: 'POST', body });
     // if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
     setAvatarFile(null);
-    // setAvatarPreview(null);
 
     console.log('Profile updated:', { ...formData, avatarFile });
     showToast('Profile saved successfully ', 'success');
   };
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-6 relative text-gray-100">
       {/* Toast */}
       {toast && (
         <div className="fixed right-4 top-4 z-[60]">
           <div
-            className={`flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg bg-white ${
-              toast.type === 'success' ? 'border-green-200' : 'border-red-200'
+            className={`flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg bg-gray-900 ring-1 ring-white/5 ${
+              toast.type === 'success' ? 'border-green-800' : 'border-red-800'
             }`}
+            role="status"
+            aria-live="polite"
           >
             <div className="mt-0.5">
               {toast.type === 'success' ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
               ) : (
-                <XCircle className="w-5 h-5 text-red-600" />
+                <XCircle className="w-5 h-5 text-red-400" />
               )}
             </div>
-            <div className="text-sm text-gray-800">{toast.message}</div>
+            <div className="text-sm text-gray-200">{toast.message}</div>
             <button
               onClick={closeToast}
-              className="ml-2 p-1 rounded hover:bg-gray-100"
+              className="ml-2 p-1 rounded hover:bg-gray-800"
               aria-label="Close"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 ring-1 ring-white/5">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center space-x-2 mb-2">
-              <User className="w-6 h-6 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+              <User className="w-6 h-6 text-blue-400" />
+              <h1 className="text-2xl font-bold text-gray-100">Profile</h1>
             </div>
-            <p className="text-gray-600">Manage your personal information</p>
+            <p className="text-gray-400">Manage your personal information</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500 mb-1">Last updated</p>
-            <p className="font-semibold text-gray-900">August 20, 2024</p>
-            <p className="text-xs text-gray-400">2:15 PM</p>
+            <p className="font-semibold text-gray-200">August 20, 2024</p>
+            <p className="text-xs text-gray-500">2:15 PM</p>
           </div>
         </div>
       </div>
 
       {/* Profile Form */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 ring-1 ring-white/5">
+        <div className="p-6 border-b border-gray-800">
           <div className="flex items-center space-x-2">
-            <User className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Doctor Profile</h2>
+            <User className="w-5 h-5 text-blue-400" />
+            <h2 className="text-lg font-semibold text-gray-100">Doctor Profile</h2>
           </div>
-          <p className="text-gray-600 mt-1">Update your basic information</p>
+          <p className="text-gray-500 mt-1">Update your basic information</p>
         </div>
 
         <div className="p-6">
@@ -177,7 +178,7 @@ const Profile: React.FC = () => {
           <div className="flex flex-col items-center mb-8">
             <div className="relative">
               {/* Circle avatar */}
-              <div className="w-28 h-28 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center ring-2 ring-white shadow">
+              <div className="w-28 h-28 rounded-full bg-blue-500/15 overflow-hidden flex items-center justify-center ring-1 ring-blue-500/30 shadow">
                 {avatarPreview ? (
                   <img
                     src={avatarPreview}
@@ -185,7 +186,7 @@ const Profile: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-2xl font-bold text-blue-700">
+                  <span className="text-2xl font-bold text-blue-300">
                     {initials}
                   </span>
                 )}
@@ -208,7 +209,7 @@ const Profile: React.FC = () => {
                 <button
                   type="button"
                   onClick={removeAvatar}
-                  className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                  className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-red-800 text-red-300 hover:bg-red-950/40"
                 >
                   <Trash2 className="w-4 h-4" />
                   Remove
@@ -227,7 +228,7 @@ const Profile: React.FC = () => {
 
             {/* Inline error */}
             {error && (
-              <div className="mt-3 inline-flex items-center gap-2 text-sm text-red-600">
+              <div className="mt-3 inline-flex items-center gap-2 text-sm text-red-400">
                 <AlertCircle className="w-4 h-4" />
                 {error}
               </div>
@@ -236,35 +237,35 @@ const Profile: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6 max-w-xl mx-auto">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
                 Doctor Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   id="name"
                   name="name"
                   type="text"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-700 bg-gray-950 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500/40 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   id="email"
                   name="email"
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-700 bg-gray-950 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500/40 focus:border-transparent"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
@@ -273,11 +274,11 @@ const Profile: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   id="newPassword"
                   name="newPassword"
@@ -285,7 +286,7 @@ const Profile: React.FC = () => {
                   value={formData.newPassword}
                   onChange={handleInputChange}
                   placeholder="Leave blank to keep current password"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-700 bg-gray-950 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500/40 focus:border-transparent"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
@@ -295,7 +296,7 @@ const Profile: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-950 transition-colors font-medium"
             >
               <Save className="w-5 h-5" />
               <span>Save Profile</span>

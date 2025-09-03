@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { Appointment, Patient } from '../types';
 
@@ -30,9 +30,23 @@ const timeSlots = (() => {
 })();
 
 const durations = [15, 30, 45, 60];
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const d = new Date();
+  // local-safe yyyy-mm-dd for date input
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+};
 
-// --- NEW: robust resolver for edit mode ---
+// Local-safe formatter for date inputs from mixed sources
+function toLocalInputDate(value?: string | Date | null): string {
+  if (!value) return '';
+  const d = typeof value === 'string' ? new Date(value) : value;
+  if (isNaN(d.getTime())) return '';
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+// --- robust resolver for edit mode ---
 function resolvePatientCodeForEdit(
   appt: any | null | undefined,
   patients: Patient[]
@@ -45,21 +59,17 @@ function resolvePatientCodeForEdit(
     (appt as any).patientCode,    // alt
   ].filter(Boolean);
 
-  // If we got an explicit code, use it when present in list
   for (const code of codesToTry) {
     if (code && patients.some(p => p.patientId === code)) return code!;
   }
 
-  // Try numeric id from API: patient_id
   const numeric = (appt as any).patient_id ?? (appt as any).patientId;
   if (numeric !== undefined && numeric !== null) {
     const numStr = String(numeric);
-    // Match by patient.id if your Patient carries DB id there
     const byId = patients.find(p => String((p as any).id) === numStr);
     if (byId) return byId.patientId;
   }
 
-  // Last resort: nothing matched, pick first so modal is valid
   return patients[0]?.patientId ?? '';
 }
 
@@ -89,32 +99,35 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
   const [status, setStatus] = useState<'scheduled' | 'completed' | 'cancelled' | 'no-show'>('scheduled');
   const [err, setErr] = useState<string | null>(null);
 
-  // Prefill on open for create/edit
+  const patientSelectRef = useRef<HTMLSelectElement | null>(null);
+
+  // Prefill on open for create/edit + focus + Esc
   useEffect(() => {
     if (!open) return;
 
     if (mode === 'edit' && initialAppointment) {
-      // --- KEY PART: make sure we derive a patient code that exists in the list ---
       const code = resolvePatientCodeForEdit(initialAppointment, patients);
       setSelectedPatientId(code);
 
-      // Accept both Date and ISO/string coming from API
-      const apptDate = (initialAppointment as any).date
-        ? new Date((initialAppointment as any).date)
-        : (initialAppointment as any).start_time
-        ? new Date((initialAppointment as any).start_time)
-        : new Date();
+      const apptDate =
+        (initialAppointment as any).date ??
+        (initialAppointment as any).start_time ??
+        (initialAppointment as any).start_at ??
+        new Date();
 
-      setDateStr(apptDate.toISOString().slice(0, 10));
-      setTime((initialAppointment as any).time ?? '');
+      setDateStr(toLocalInputDate(apptDate) || todayISO());
+      setTime((initialAppointment as any).time ?? (initialAppointment as any).time_str ?? '');
       setType((initialAppointment as any).type ?? 'consultation');
-      setDuration((initialAppointment as any).duration ?? (initialAppointment as any).duration_min ?? 30);
+      setDuration(
+        (initialAppointment as any).duration ??
+        (initialAppointment as any).duration_min ??
+        30
+      );
       setReason((initialAppointment as any).notes ?? '');
-      setFee((initialAppointment as any).fee ?? 0);
+      setFee((initialAppointment as any).fee ?? (initialAppointment as any).amount ?? 0);
       setStatus((initialAppointment as any).status ?? 'scheduled');
       setErr(null);
     } else {
-      // create defaults
       if (defaultPatient?.patientId) {
         setSelectedPatientId(defaultPatient.patientId);
       } else if (patients.length) {
@@ -131,17 +144,24 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
       setStatus('scheduled');
       setErr(null);
     }
+
+    const raf = requestAnimationFrame(() => patientSelectRef.current?.focus());
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKey);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, initialAppointment, defaultPatient, patients.length]);
 
-  // If patients load after the modal opened (async fetch), ensure we always have a valid selection
+  // If patients load after open (async), ensure valid selection
   useEffect(() => {
     if (!open) return;
     if (!selectedPatientId && patients.length) {
-      // no selection -> select first
       setSelectedPatientId(patients[0].patientId);
     } else if (selectedPatientId && patients.length && !patients.some(p => p.patientId === selectedPatientId)) {
-      // current selection not found -> resolve again (edit) or set first (create)
       const fallback =
         mode === 'edit' ? resolvePatientCodeForEdit(initialAppointment, patients) : patients[0].patientId;
       setSelectedPatientId(fallback);
@@ -160,23 +180,23 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
       return setErr('Please enter a valid fee.');
 
     const base: Appointment = {
-      id: mode === 'edit' && initialAppointment ? (initialAppointment as any).id ?? (initialAppointment as any).id?.toString() ?? Date.now().toString() : Date.now().toString(),
-      patientId: selectedPatient.patientId, // <-- always a code from dropdown
+      id:
+        mode === 'edit' && initialAppointment
+          ? (initialAppointment as any).id?.toString?.() ?? Date.now().toString()
+          : Date.now().toString(),
+      patientId: selectedPatient.patientId,
       patientName: selectedPatient.name,
       date: new Date(dateStr),
       time,
-      duration: duration,
+      duration,
       type,
       status,
       notes: reason.trim() || undefined,
       fee,
     };
 
-    if (mode === 'edit') {
-      onUpdate?.(base);
-    } else {
-      onCreate?.(base);
-    }
+    if (mode === 'edit') onUpdate?.(base);
+    else onCreate?.(base);
 
     onClose();
   };
@@ -186,24 +206,29 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
       <div className="absolute inset-0 flex items-start justify-center p-4 md:p-8 overflow-y-auto">
-        <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div className="w-full max-w-2xl bg-gray-900 text-gray-100 rounded-2xl shadow-xl border border-gray-800">
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="flex items-center justify-between p-5 border-b border-gray-800">
             <h3 className="text-lg font-semibold">{title}</h3>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Close">
-              <X className="w-5 h-5 text-gray-600" />
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
           {/* Form */}
           <form onSubmit={submit} className="p-6 space-y-5">
-            {/* Patient (IDs dropdown) */}
+            {/* Patient */}
             <div>
               <label className="text-sm font-medium">Patient</label>
               <select
-                className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                ref={patientSelectRef}
+                className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={selectedPatientId}
                 onChange={(e) => setSelectedPatientId(e.target.value)}
               >
@@ -215,8 +240,8 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
                 ))}
               </select>
               {selectedPatient && (
-                <p className="mt-2 text-xs text-gray-600">
-                  Selected: <span className="font-medium">{selectedPatient.name}</span> ({selectedPatient.patientId})
+                <p className="mt-2 text-xs text-gray-400">
+                  Selected: <span className="font-medium text-gray-200">{selectedPatient.name}</span> ({selectedPatient.patientId})
                 </p>
               )}
             </div>
@@ -227,7 +252,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
                 <label className="text-sm font-medium">Date</label>
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={dateStr}
                   onChange={(e) => setDateStr(e.target.value)}
                 />
@@ -235,7 +260,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
               <div>
                 <label className="text-sm font-medium">Time</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                 >
@@ -252,7 +277,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
               <div>
                 <label className="text-sm font-medium">Type</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={type}
                   onChange={(e) => setType(e.target.value as any)}
                 >
@@ -265,7 +290,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
               <div>
                 <label className="text-sm font-medium">Duration</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
                 >
@@ -280,7 +305,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
             <div>
               <label className="text-sm font-medium">Reason / Notes</label>
               <textarea
-                className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
                 placeholder="Enter reason for the appointment"
                 value={reason}
@@ -294,7 +319,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
                 <label className="text-sm font-medium">Fee</label>
                 <input
                   type="number"
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={fee}
                   onChange={(e) => setFee(Number(e.target.value))}
                   placeholder="Enter consultation fee"
@@ -305,7 +330,7 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
                 <div>
                   <label className="text-sm font-medium">Status</label>
                   <select
-                    className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                    className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={status}
                     onChange={(e) => setStatus(e.target.value as any)}
                   >
@@ -318,20 +343,20 @@ const ScheduleAppointmentModal: React.FC<Props> = ({
               )}
             </div>
 
-            {err && <p className="text-sm text-red-600">{err}</p>}
+            {err && <p className="text-sm text-red-400">{err}</p>}
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 pt-1">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 {submitLabel}
               </button>

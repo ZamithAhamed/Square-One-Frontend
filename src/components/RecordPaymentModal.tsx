@@ -27,7 +27,7 @@ type UnpaidAppt = {
   duration: number;
   type: 'consultation' | 'follow-up' | 'checkup' | 'urgent';
   status: 'scheduled' | 'completed' | 'cancelled' | 'no-show';
-  fee: number; // this is the unpaid amount we’ll charge
+  fee: number;
   notes?: string | null;
 };
 
@@ -36,7 +36,6 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 const RecordPaymentModal: React.FC<Props> = ({
   open,
   onClose,
-  // appointments, payments (unused after switching to backend fetch)
   patients,
   onCreate,
   currency = 'LKR',
@@ -77,6 +76,14 @@ const RecordPaymentModal: React.FC<Props> = ({
     setManualNotes('');
     setErr(null);
   }, [open, patients]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
   // Fetch unpaid appointments from backend with debounce
   const debounceRef = useRef<number | undefined>(undefined);
@@ -172,13 +179,13 @@ const RecordPaymentModal: React.FC<Props> = ({
         .join(' ');
 
       const payload: any = {
-        amount: selectedAppt.fee, // unpaid amount from backend
-        patient_id: selectedAppt.patientCode, // let the backend resolve the numeric ID
+        amount: selectedAppt.fee,
+        patient_id: selectedAppt.patientCode, // backend resolves numeric ID
         appointment_id: selectedAppt.appointmentId,
         currency,
         method,
         status: 'paid',
-        description: description,
+        description,
       };
       if (selectedAppt.apptCode) payload.appointment_code = selectedAppt.apptCode;
       else if (selectedAppt.appointmentId) payload.appointment_id = selectedAppt.appointmentId;
@@ -189,10 +196,7 @@ const RecordPaymentModal: React.FC<Props> = ({
 
       try {
         setSubmitting(true);
-        const res = await api('/api/payments', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        const res = await api('/api/payments', { method: 'POST', body: JSON.stringify(payload) });
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           throw new Error(j?.error?.message || `Failed to record payment (${res.status})`);
@@ -225,7 +229,7 @@ const RecordPaymentModal: React.FC<Props> = ({
       .join(' ');
 
     const payload: any = {
-      patient_code: patient.patientId, // let the backend resolve the numeric ID
+      patient_code: patient.patientId, // backend resolves numeric ID
       amount: manualAmount,
       currency,
       method,
@@ -239,10 +243,7 @@ const RecordPaymentModal: React.FC<Props> = ({
 
     try {
       setSubmitting(true);
-      const res = await api('/api/payments', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      const res = await api('/api/payments', { method: 'POST', body: JSON.stringify(payload) });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.error?.message || `Failed to record payment (${res.status})`);
@@ -259,32 +260,32 @@ const RecordPaymentModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
       <div className="absolute inset-0 flex items-start justify-center p-4 md:p-8 overflow-y-auto">
-        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div className="w-full max-w-3xl bg-gray-900 text-gray-100 rounded-2xl shadow-xl border border-gray-800 ring-1 ring-white/5">
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="flex items-center justify-between p-5 border-b border-gray-800">
             <h3 className="text-lg font-semibold">Record Payment</h3>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Close">
-              <X className="w-5 h-5 text-gray-600" />
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40" aria-label="Close">
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
           {/* Tabs */}
           <div className="px-6 pt-5">
-            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+            <div className="inline-flex rounded-lg border border-gray-800 overflow-hidden bg-gray-950">
               <button
                 onClick={() => setTab('appointment')}
-                className={`px-4 py-2 text-sm ${
-                  tab === 'appointment' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                className={`px-4 py-2 text-sm transition-colors ${
+                  tab === 'appointment' ? 'bg-blue-600 text-white' : 'bg-gray-950 text-gray-300 hover:bg-gray-800'
                 }`}
               >
                 Appointment Payment
               </button>
               <button
                 onClick={() => setTab('manual')}
-                className={`px-4 py-2 text-sm ${
-                  tab === 'manual' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                className={`px-4 py-2 text-sm transition-colors ${
+                  tab === 'manual' ? 'bg-blue-600 text-white' : 'bg-gray-950 text-gray-300 hover:bg-gray-800'
                 }`}
               >
                 Manual Entry
@@ -299,19 +300,19 @@ const RecordPaymentModal: React.FC<Props> = ({
                 <div>
                   <p className="text-sm font-medium mb-2">Select Unpaid Appointment</p>
                   <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search appointments by patient name, code, or appointment code..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-800 rounded-lg bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
-                  <div className="max-h-56 overflow-auto rounded-lg border border-gray-200 divide-y">
-                    {loadingUnpaid && <div className="p-4 text-sm text-gray-500">Loading…</div>}
+                  <div className="max-h-56 overflow-auto rounded-lg border border-gray-800 divide-y divide-gray-800">
+                    {loadingUnpaid && <div className="p-4 text-sm text-gray-400">Loading…</div>}
                     {!loadingUnpaid && unpaid.length === 0 && (
-                      <div className="p-4 text-sm text-gray-500">No unpaid appointments</div>
+                      <div className="p-4 text-sm text-gray-400">No unpaid appointments</div>
                     )}
                     {!loadingUnpaid &&
                       unpaid.map((a) => (
@@ -319,20 +320,19 @@ const RecordPaymentModal: React.FC<Props> = ({
                           key={a.key}
                           type="button"
                           onClick={() => setSelectedApptId(a.key)}
-                          className={`w-full text-left p-3 hover:bg-gray-50 transition-colors ${
-                            selectedApptId === a.key ? 'bg-blue-50' : ''
+                          className={`w-full text-left p-3 hover:bg-gray-800 transition-colors ${
+                            selectedApptId === a.key ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-500/30' : ''
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-gray-900">{a.patientName}</p>
-                              <p className="text-xs text-gray-500">
-                                {a.patientCode} • {a.apptCode || a.appointmentId} •{' '}
-                                {a.date.toLocaleDateString()} {a.time}
+                              <p className="font-medium text-gray-100">{a.patientName}</p>
+                              <p className="text-xs text-gray-400">
+                                {a.patientCode} • {a.apptCode || a.appointmentId} • {a.date.toLocaleDateString()} {a.time}
                               </p>
-                              <p className="text-xs text-gray-500 capitalize">{a.type}</p>
+                              <p className="text-xs text-gray-400 capitalize">{a.type}</p>
                             </div>
-                            <div className="text-blue-600 font-semibold">
+                            <div className="text-blue-300 font-semibold">
                               {currency} {a.fee.toLocaleString()}
                             </div>
                           </div>
@@ -343,7 +343,38 @@ const RecordPaymentModal: React.FC<Props> = ({
               </>
             ) : (
               <>
-                 --- Under Cosntruction ----
+                <div className="rounded-lg border border-gray-800 p-4 bg-gray-950">
+                  <p className="text-sm text-gray-400 italic">— Under Construction —</p>
+                </div>
+
+                {/* Example dark inputs for manual path (kept hidden in placeholder above if you haven't wired it) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-300">Patient</label>
+                    <select
+                      className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={manualPatientId}
+                      onChange={(e) => setManualPatientId(e.target.value)}
+                    >
+                      {patients.length === 0 && <option value="">No patients</option>}
+                      {patients.map((p) => (
+                        <option key={`${p.id}-${p.patientId}`} value={p.patientId}>
+                          {p.patientId} — {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-300">Amount</label>
+                    <input
+                      type="number"
+                      min={0}
+                      className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={manualAmount}
+                      onChange={(e) => setManualAmount(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
               </>
             )}
 
@@ -359,8 +390,8 @@ const RecordPaymentModal: React.FC<Props> = ({
                     checked={method === 'card'}
                     onChange={() => setMethod('card')}
                   />
-                  <CreditCard className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-800">Card Payment</span>
+                  <CreditCard className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-200">Card Payment</span>
                 </label>
                 <label className="inline-flex items-center gap-2 cursor-pointer">
                   <input
@@ -370,8 +401,8 @@ const RecordPaymentModal: React.FC<Props> = ({
                     checked={method === 'cash'}
                     onChange={() => setMethod('cash')}
                   />
-                  <Wallet className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-800">Cash</span>
+                  <Wallet className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-200">Cash</span>
                 </label>
                 <label className="inline-flex items-center gap-2 cursor-pointer">
                   <input
@@ -381,30 +412,30 @@ const RecordPaymentModal: React.FC<Props> = ({
                     checked={method === 'online'}
                     onChange={() => setMethod('online')}
                   />
-                  <Globe className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-800">Online</span>
+                  <Globe className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-200">Online</span>
                 </label>
               </div>
             </div>
 
             {/* Card details (only for card method) */}
             {method === 'card' && (
-              <div className="rounded-lg border border-gray-200 p-4">
+              <div className="rounded-lg border border-gray-800 p-4 bg-gray-950">
                 <p className="text-sm font-medium mb-3">Card Payment Details</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-700">Transaction ID</label>
+                    <label className="text-sm text-gray-300">Transaction ID</label>
                     <input
-                      className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                      className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Transaction reference"
                       value={cardTxnId}
                       onChange={(e) => setCardTxnId(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-700">Last 4 Digits</label>
+                    <label className="text-sm text-gray-300">Last 4 Digits</label>
                     <input
-                      className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                      className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="xxxx"
                       maxLength={4}
                       value={cardLast4}
@@ -420,21 +451,21 @@ const RecordPaymentModal: React.FC<Props> = ({
               <label className="text-sm font-medium">Notes (Optional)</label>
               <textarea
                 rows={3}
-                className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Additional notes about this payment..."
                 value={tab === 'appointment' ? notes : manualNotes}
                 onChange={(e) => (tab === 'appointment' ? setNotes(e.target.value) : setManualNotes(e.target.value))}
               />
             </div>
 
-            {err && <p className="text-sm text-red-600">{err}</p>}
+            {err && <p className="text-sm text-red-400">{err}</p>}
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 pt-1">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 disabled={submitting}
               >
                 Cancel
@@ -442,7 +473,7 @@ const RecordPaymentModal: React.FC<Props> = ({
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 {submitting ? 'Saving…' : 'Record Payment'}
               </button>

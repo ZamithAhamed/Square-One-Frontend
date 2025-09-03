@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
@@ -132,49 +131,57 @@ function App() {
 
   if (checking) {
     return (
-      <div className="min-h-screen grid place-items-center text-gray-600">
+      <div className="min-h-screen grid place-items-center bg-gray-950 text-gray-300">
         Checking session…
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    // Your Login expects onLogin prop — keep that contract
-    return <Login onLogin={handleLogin} />;
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-100">
+        <Login onLogin={handleLogin} />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar
-        activeItem={currentPage}
-        onItemClick={(item) => {
-          if (
-            item === 'dashboard' ||
-            item === 'patients' ||
-            item === 'appointments' ||
-            item === 'payments' ||
-            item === 'profile'
-          ) {
-            setCurrentPage(item);
-          }
-        }}
-      />
-      <div className="flex-1 flex flex-col">
-        {headerEl}
-        <main className="flex-1 p-6 overflow-auto">
-          {renderPage()}
-        </main>
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <aside className="fixed inset-y-0 left-0 w-64 bg-gray-900 border-r border-gray-800 z-40">
+        <Sidebar
+          activeItem={currentPage}
+          onItemClick={(item) => {
+            if (
+              item === 'dashboard' ||
+              item === 'patients' ||
+              item === 'appointments' ||
+              item === 'payments' ||
+              item === 'profile'
+            ) {
+              setCurrentPage(item);
+            }
+          }}
+        />
+      </aside>
 
-        {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">© 2025 Square One. All rights reserved.</p>
-            
-          </div>
-        </footer>
-      </div>
+      <header className="fixed top-0 left-64 right-0 h-16 bg-gray-900 border-b border-gray-800 z-50">
+          {headerEl}
+      </header>
+
+      <footer className="fixed bottom-0 left-64 right-0 h-14 bg-gray-900 border-t border-gray-800 z-50">
+        <div className="h-full flex items-center justify-between px-6">
+          <p className="text-sm text-gray-400">© 2025 Square One. All rights reserved.</p>
+        </div>
+      </footer>
+
+      <main className="ml-64 pt-16 pb-14">
+        <div className="p-6 h-[calc(100vh-4rem-3.5rem)] overflow-y-auto">
+          {renderPage()}
+        </div>
+      </main>
     </div>
   );
+
 }
 
 export default App;

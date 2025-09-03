@@ -1,6 +1,6 @@
 import React from 'react';
 import { Phone, Mail, AlertTriangle, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { Patient } from '../types';
+import type { Patient } from '../types';
 
 interface PatientCardProps {
   patient: Patient;
@@ -13,8 +13,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit, onDe
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
 
-  const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name: string) => {
+    const letters = (name || '')
+      .trim()
+      .split(/\s+/)
+      .map(n => n[0]?.toUpperCase())
+      .join('')
+      .slice(0, 2);
+    return letters || 'PT';
+  };
 
   const age = patient.dob
     ? Math.max(0, Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000))
@@ -37,19 +44,19 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit, onDe
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+    <div className="bg-gray-900 rounded-lg border border-gray-800 hover:bg-gray-800/50 transition-colors shadow-sm">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-blue-700">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+              <span className="text-sm font-semibold text-blue-300">
                 {getInitials(patient.name)}
               </span>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{patient.name}</h3>
-              <p className="text-sm text-gray-500">{patient.patientId}</p>
-              <p className="text-xs text-gray-400">
+              <h3 className="font-semibold text-gray-100">{patient.name}</h3>
+              <p className="text-sm text-gray-400">{patient.patientId}</p>
+              <p className="text-xs text-gray-500">
                 {age} years • {patient.gender}
               </p>
             </div>
@@ -57,7 +64,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit, onDe
 
           <div className="relative" ref={menuRef}>
             <button
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-50"
+              className="p-1 text-gray-400 hover:text-gray-200 rounded-md hover:bg-gray-800/60 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               onClick={() => setMenuOpen(v => !v)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -68,19 +75,19 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit, onDe
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 mt-2 w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-10"
+                className="absolute right-0 mt-2 w-40 rounded-lg border border-gray-800 bg-gray-900 shadow-lg ring-1 ring-white/10 z-10"
               >
                 <button
                   role="menuitem"
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800/60"
                   onClick={() => { setMenuOpen(false); onEdit?.(patient); }}
                 >
-                  <Pencil className="w-4 h-4 text-gray-500" />
+                  <Pencil className="w-4 h-4 text-gray-400" />
                   Edit
                 </button>
                 <button
                   role="menuitem"
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10"
                   onClick={() => { setMenuOpen(false); onDelete?.(patient); }}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -92,30 +99,30 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit, onDe
         </div>
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <Phone className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Phone className="w-4 h-4 text-gray-500" />
             <span>{patient.phone}</span>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <Mail className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Mail className="w-4 h-4 text-gray-500" />
             <span>{patient.email}</span>
           </div>
         </div>
 
         {patient.allergies && (
           <div className="mb-4">
-            <div className="flex items-center space-x-2 text-sm">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-red-600 font-medium">Allergies:</span>
-              <span className="text-gray-600">{patient.allergies}</span>
+            <div className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="w-4 h-4 text-red-400" />
+              <span className="text-red-400 font-medium">Allergies:</span>
+              <span className="text-gray-300">{patient.allergies}</span>
             </div>
           </div>
         )}
 
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-gray-800">
           <button
             onClick={() => onView?.(patient)}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           >
             <Eye className="w-4 h-4" />
             <span>View</span>

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X } from 'lucide-react';
-import { Patient } from '../types';
+import type { Patient } from '../types';
 
 type Mode = 'create' | 'edit';
 
@@ -27,8 +27,7 @@ type FormState = {
   gender: 'male' | 'female' | 'other' | '';
   bloodType: string;
   allergies: string;
-  // patientId only displayed (read-only) when editing
-  patientId?: string;
+  patientId?: string; // read-only in edit
 };
 
 const emptyForm: FormState = {
@@ -41,6 +40,21 @@ const emptyForm: FormState = {
   allergies: '',
 };
 
+// Safely format various date inputs to yyyy-mm-dd (local timezone)
+function toLocalInputDate(value?: string | Date | null): string {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    // If it's already yyyy-mm-dd, use as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const tz = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return tz.toISOString().slice(0, 10);
+  }
+  const tz = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+  return tz.toISOString().slice(0, 10);
+}
+
 const AddPatientModal: React.FC<Props> = ({
   open,
   mode = 'create',
@@ -52,6 +66,7 @@ const AddPatientModal: React.FC<Props> = ({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const firstFieldRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -60,7 +75,7 @@ const AddPatientModal: React.FC<Props> = ({
         name: initialPatient.name ?? '',
         email: initialPatient.email ?? '',
         phone: initialPatient.phone ?? initialPatient.contact ?? '',
-        dob: initialPatient.dob ? new Date(initialPatient.dob + 1 ).toISOString().slice(0, 10) : '',
+        dob: toLocalInputDate(initialPatient.dob ?? ''),
         gender: (initialPatient.gender as any) ?? '',
         bloodType: (initialPatient.bloodType as any) ?? '',
         allergies: initialPatient.allergies ?? '',
@@ -72,6 +87,10 @@ const AddPatientModal: React.FC<Props> = ({
       setErrors({});
     }
   }, [open, mode, initialPatient]);
+
+  useEffect(() => {
+    if (open) firstFieldRef.current?.focus();
+  }, [open]);
 
   if (!open) return null;
 
@@ -101,7 +120,7 @@ const AddPatientModal: React.FC<Props> = ({
         phone: form.phone.trim(),
         dob: form.dob, // yyyy-mm-dd
         gender: form.gender as 'male' | 'female' | 'other',
-        blood_type: form.bloodType || undefined,
+        bloodType: form.bloodType || undefined, // <- fixed key
         allergies: form.allergies.trim() || undefined,
       };
       if (mode === 'create') {
@@ -120,19 +139,25 @@ const AddPatientModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={onClose}
+        aria-hidden
+      />
+      {/* Modal container */}
       <div className="absolute inset-0 flex items-start justify-center p-4 md:p-8 overflow-y-auto">
-        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div className="w-full max-w-3xl bg-gray-900 text-gray-100 rounded-2xl shadow-xl border border-gray-800">
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="flex items-center justify-between p-5 border-b border-gray-800">
             <h3 className="text-lg font-semibold">{title}</h3>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100"
+              className="p-2 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
@@ -141,58 +166,69 @@ const AddPatientModal: React.FC<Props> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Name */}
               <div>
-                <label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium">Full Name <span className="text-red-400">*</span></label>
                 <input
-                  className={`mt-1 w-full rounded-lg border p-2.5 ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                  ref={firstFieldRef}
+                  className={`mt-1 w-full rounded-lg border p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.name ? 'border-red-500' : 'border-gray-800'
+                  }`}
                   placeholder="Enter full name"
                   value={form.name}
                   onChange={e => set('name', e.target.value)}
                 />
-                {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
               </div>
 
               {/* Email */}
               <div>
-                <label className="text-sm font-medium">Email <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium">Email <span className="text-red-400">*</span></label>
                 <input
                   type="email"
-                  className={`mt-1 w-full rounded-lg border p-2.5 ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`mt-1 w-full rounded-lg border p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.email ? 'border-red-500' : 'border-gray-800'
+                  }`}
                   placeholder="name@example.com"
                   value={form.email}
                   onChange={e => set('email', e.target.value)}
                 />
-                {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
+                {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
               </div>
 
               {/* Phone */}
               <div>
-                <label className="text-sm font-medium">Phone <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium">Phone <span className="text-red-400">*</span></label>
                 <input
-                  className={`mt-1 w-full rounded-lg border p-2.5 ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`mt-1 w-full rounded-lg border p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.phone ? 'border-red-500' : 'border-gray-800'
+                  }`}
                   placeholder="+94 77 123 4567"
                   value={form.phone}
                   onChange={e => set('phone', e.target.value)}
                 />
-                {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
+                {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
               </div>
 
               {/* DOB */}
               <div>
-                <label className="text-sm font-medium">Date of Birth <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium">Date of Birth <span className="text-red-400">*</span></label>
                 <input
                   type="date"
-                  className={`mt-1 w-full rounded-lg border p-2.5 ${errors.dob ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`mt-1 w-full rounded-lg border p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.dob ? 'border-red-500' : 'border-gray-800'
+                  }`}
                   value={form.dob}
                   onChange={e => set('dob', e.target.value)}
                 />
-                {errors.dob && <p className="text-xs text-red-600 mt-1">{errors.dob}</p>}
+                {errors.dob && <p className="text-xs text-red-400 mt-1">{errors.dob}</p>}
               </div>
 
               {/* Gender */}
               <div>
-                <label className="text-sm font-medium">Gender <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium">Gender <span className="text-red-400">*</span></label>
                 <select
-                  className={`mt-1 w-full rounded-lg border p-2.5 ${errors.gender ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`mt-1 w-full rounded-lg border p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.gender ? 'border-red-500' : 'border-gray-800'
+                  }`}
                   value={form.gender}
                   onChange={e => set('gender', e.target.value)}
                 >
@@ -201,14 +237,14 @@ const AddPatientModal: React.FC<Props> = ({
                   <option value="female">Female</option>
                   <option value="other">Other</option>
                 </select>
-                {errors.gender && <p className="text-xs text-red-600 mt-1">{errors.gender}</p>}
+                {errors.gender && <p className="text-xs text-red-400 mt-1">{errors.gender}</p>}
               </div>
 
               {/* Blood Type */}
               <div>
                 <label className="text-sm font-medium">Blood Type</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={form.bloodType}
                   onChange={e => set('bloodType', e.target.value)}
                 >
@@ -224,7 +260,7 @@ const AddPatientModal: React.FC<Props> = ({
                 <div>
                   <label className="text-sm font-medium">Patient ID</label>
                   <input
-                    className="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 text-gray-600"
+                    className="mt-1 w-full rounded-lg border p-2.5 bg-gray-800 text-gray-400 border-gray-800"
                     value={form.patientId}
                     disabled
                   />
@@ -235,7 +271,7 @@ const AddPatientModal: React.FC<Props> = ({
               <div className="md:col-span-2">
                 <label className="text-sm font-medium">Allergies</label>
                 <textarea
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2.5"
+                  className="mt-1 w-full rounded-lg border border-gray-800 p-2.5 bg-gray-950 text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={2}
                   placeholder="Comma-separated list (optional)"
                   value={form.allergies}
@@ -249,14 +285,14 @@ const AddPatientModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 {submitLabel}
               </button>

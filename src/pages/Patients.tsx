@@ -8,7 +8,6 @@ import ScheduleAppointmentModal from '../components/ScheduleAppointmentModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { normalizePatient } from '../utils/normalize';
 
-
 import type { Patient, Appointment } from '../types';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -80,8 +79,7 @@ const Patients: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, [patients]);
-
+  }, []); // <- prevent refetch loop
 
   // derived
   const filteredPatients = useMemo(() => {
@@ -97,10 +95,10 @@ const Patients: React.FC = () => {
   }, [patients, searchTerm]);
 
   const stats = [
-    { label: 'Total Patients', value: patients.length, icon: Users, color: 'bg-blue-500' },
-    { label: 'Active Patients', value: patients.length, icon: Activity, color: 'bg-green-500' },
-    { label: 'Pending Lab Results', value: 0, icon: Clock, color: 'bg-orange-500' },
-    { label: 'Critical Follow-ups', value: 0, icon: AlertTriangle, color: 'bg-red-500' },
+    { label: 'Total Patients', value: patients.length, icon: Users, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-400' },
+    { label: 'Active Patients', value: patients.length, icon: Activity, iconBg: 'bg-green-500/20', iconColor: 'text-green-400' },
+    { label: 'Pending Lab Results', value: 0, icon: Clock, iconBg: 'bg-orange-500/20', iconColor: 'text-orange-400' },
+    { label: 'Critical Follow-ups', value: 0, icon: AlertTriangle, iconBg: 'bg-red-500/20', iconColor: 'text-red-400' },
   ];
 
   // ---- CRUD handlers (talk to API) ----
@@ -119,7 +117,7 @@ const Patients: React.FC = () => {
     }
     const created = await res.json();
     const p: Patient = created?.data ?? created;
-    setPatients(prev => [p, ...prev]);
+    setPatients(prev => [normalizePatient(p), ...prev]);
   };
 
   const handleUpdatePatient = async (who: Patient, payload: {
@@ -134,9 +132,6 @@ const Patients: React.FC = () => {
 
     let url = `/api/patients/${encodeURIComponent(identifier)}`;
 
-    // If your backend expects the human code instead, flip to:
-    // let url = `/api/patients/code/${encodeURIComponent(who.patientId)}`;
-
     const res = await api(url, { method: 'PUT', body: JSON.stringify(payload) });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
@@ -146,7 +141,6 @@ const Patients: React.FC = () => {
     const updated = normalizePatient((await res.json())?.data ?? {});
     setPatients(prev => prev.map(x => (x.id === updated.id ? updated : x)));
   };
-
 
   const handleAskDelete = (p: Patient) => {
     setToDelete(p);
@@ -161,7 +155,6 @@ const Patients: React.FC = () => {
       return;
     }
     let url = `/api/patients/${encodeURIComponent(identifier)}`;
-    // or `/api/patients/code/${encodeURIComponent(toDelete.patientId)}` if your backend expects code
 
     const res = await api(url, { method: 'DELETE' });
     if (!res.ok) {
@@ -174,14 +167,12 @@ const Patients: React.FC = () => {
     setToDelete(null);
   };
 
-
   const handleScheduleFromDetails = (p: Patient) => {
     setScheduleFor(p);
     setOpenSchedule(true);
   };
 
   const handleCreateAppointment = async (appt: Appointment) => {
-    // Expect ScheduleAppointmentModal to provide a fully-formed payload (or adapt here)
     const res = await api('/api/appointments', {
       method: 'POST',
       body: JSON.stringify({
@@ -211,16 +202,16 @@ const Patients: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-100">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
-          <p className="text-gray-600">Manage your patient records</p>
+          <h1 className="text-2xl font-bold text-white">Patients</h1>
+          <p className="text-gray-400">Manage your patient records</p>
         </div>
         <button
           onClick={() => { setEditPatient(null); setOpenAdd(true); }}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500 transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>Add Patient</span>
@@ -228,15 +219,15 @@ const Patients: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 p-6">
         <div className="relative max-w-lg">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search patients by name, ID, email, phone..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-950 border border-gray-800 text-gray-100 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
         </div>
       </div>
@@ -244,14 +235,14 @@ const Patients: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center space-x-3">
-              <div className={`p-3 ${stat.color} rounded-lg`}>
-                <stat.icon className="w-6 h-6 text-white" />
+          <div key={idx} className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 p-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-lg ${stat.iconBg}`}>
+                <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-400">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-100">{stat.value}</p>
               </div>
             </div>
           </div>
@@ -259,11 +250,11 @@ const Patients: React.FC = () => {
       </div>
 
       {/* Patient List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800">
+        <div className="p-6 border-b border-gray-800">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Patient Records</h2>
-            <span className="text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-gray-100">Patient Records</h2>
+            <span className="text-sm text-gray-400">
               {loading ? 'Loading…' : `${filteredPatients.length} patients`}
             </span>
           </div>
@@ -272,8 +263,8 @@ const Patients: React.FC = () => {
         <div className="p-6">
           {!loading && filteredPatients.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No patients found</p>
+              <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-400">No patients found</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -304,7 +295,6 @@ const Patients: React.FC = () => {
           }
         }}
       />
-
 
       {/* View Patient Details */}
       {selectedPatient && (

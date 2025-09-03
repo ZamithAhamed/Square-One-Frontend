@@ -69,7 +69,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLogout, user }) => {
   const role = user?.role || 'admin';
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 relative z-50">
+    <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 relative z-50 text-gray-100">
       <div className="flex items-center justify-between">
         <div className="flex-1 max-w-lg" />
         <div className="flex items-center space-x-4">
@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLogout, user }) => {
             <button
               ref={btnRef}
               onClick={() => setOpen(v => !v)}
-              className="flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-gray-800/60 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               aria-haspopup="menu"
               aria-expanded={open}
             >
@@ -85,44 +85,44 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLogout, user }) => {
                 <span className="text-sm font-medium text-white">{initials}</span>
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-sm font-medium text-gray-900 leading-tight">{name}</p>
-                <p className="text-xs text-gray-500 leading-tight">{role}</p>
+                <p className="text-sm font-medium text-gray-100 leading-tight">{name}</p>
+                <p className="text-xs text-gray-400 leading-tight">{role}</p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
             {open && (
               <div
                 ref={menuRef}
                 role="menu"
-                className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 z-[70]"
+                className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl border border-gray-800 bg-gray-900 shadow-lg ring-1 ring-white/10 z-[70]"
               >
-                <div className="px-4 py-3 border-b">
-                  <p className="text-sm font-medium text-gray-900">{name}</p>
-                  <p className="text-xs text-gray-500">{role}</p>
+                <div className="px-4 py-3 border-b border-gray-800">
+                  <p className="text-sm font-medium text-gray-100">{name}</p>
+                  <p className="text-xs text-gray-400">{role}</p>
                 </div>
                 <div className="py-1">
                   <button
                     onClick={() => go('profile', '/profile')}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800/60 hover:text-gray-100"
                     role="menuitem"
                   >
-                    <User className="w-4 h-4 text-gray-500" />
+                    <User className="w-4 h-4 text-gray-400" />
                     Profile
                   </button>
                   <button
                     onClick={() => go('settings', '/settings')}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800/60 hover:text-gray-100"
                     role="menuitem"
                   >
-                    <Settings className="w-4 h-4 text-gray-500" />
+                    <Settings className="w-4 h-4 text-gray-400" />
                     Settings
                   </button>
                 </div>
-                <div className="py-1 border-t">
+                <div className="py-1 border-t border-gray-800">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10"
                     role="menuitem"
                   >
                     <LogOut className="w-4 h-4" />

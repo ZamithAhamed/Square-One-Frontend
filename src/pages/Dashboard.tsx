@@ -1,6 +1,5 @@
 // src/pages/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { DollarSign } from 'lucide-react';
 import DashboardStats from '../components/DashboardStats';
 import AppointmentsList from '../components/AppointmentsList';
 import { api } from '../utils/api';
@@ -139,39 +138,39 @@ const Dashboard: React.FC = () => {
   // Loading / error states kept simple for the dashboard
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-gray-600">Loading dashboard…</p>
+      <div className="space-y-6 text-gray-100">
+        <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 p-6">
+          <p className="text-gray-300">Loading dashboard…</p>
         </div>
       </div>
     );
   }
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-red-600">Error: {error}</p>
+      <div className="space-y-6 text-gray-100">
+        <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 p-6">
+          <p className="text-red-400">Error: {error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-100">
       {/* Welcome Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome back, Mr Doctor</h1>
-            <p className="text-gray-600">{currentDate}</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Welcome back, Mr Doctor</h1>
+            <p className="text-gray-400">{currentDate}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500 mb-1">Next appointment</p>
-            <p className="font-semibold text-gray-900">
+            <p className="text-sm text-gray-400 mb-1">Next appointment</p>
+            <p className="font-semibold text-gray-100">
               {upcoming ? `Today at ${upcoming.time}` : 'No appointments'}
             </p>
             {upcoming && (
-              <p className="text-xs text-gray-400">{String(upcoming.type).toUpperCase()}</p>
+              <p className="text-xs text-gray-500">{String(upcoming.type).toUpperCase()}</p>
             )}
           </div>
         </div>
