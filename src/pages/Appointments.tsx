@@ -380,7 +380,7 @@ const Appointments: React.FC = () => {
                       <div className="flex items-center gap-4 text-sm text-gray-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          <span>{appointment.date.toDateString()} - {appointment.date.toTimeString()}</span>
+                          <span>{appointment.date.toISOString().replace("T", " ").replace(".000Z", "")}</span>
                         </span>
                         <span className="capitalize">{appointment.type}</span>
                         <span>{appointment.duration} min</span>

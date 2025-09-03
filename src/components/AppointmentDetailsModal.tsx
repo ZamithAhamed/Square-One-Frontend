@@ -126,7 +126,7 @@ const AppointmentDetailsModal: React.FC<Props> = ({
               <div className="flex items-center gap-2 text-gray-300">
                 <Clock className="w-4 h-4 text-gray-500" />
                 <span className="text-sm">
-                  {date.toLocaleTimeString()} • {duration} min
+                  {date.toISOString().substring(11, 16)} • {duration} min
                 </span>
               </div>
 

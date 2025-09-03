@@ -72,7 +72,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
                       <span className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>{appointment.time}</span>
+                        <span>{appointment.date.toISOString().substring(11, 16)}</span>
                       </span>
                       <span className="capitalize">{appointment.type}</span>
                       <span>LKR {appointment.fee}</span>

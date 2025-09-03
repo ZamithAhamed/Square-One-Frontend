@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
           <div className="text-right">
             <p className="text-sm text-gray-400 mb-1">Next appointment</p>
             <p className="font-semibold text-gray-100">
-              {upcoming ? `Today at ${upcoming.time}` : 'No appointments'}
+              {upcoming ? `Today at ${upcoming.date.toISOString().substring(11, 16)}` : 'No appointments'}
             </p>
             {upcoming && (
               <p className="text-xs text-gray-500">{String(upcoming.type).toUpperCase()}</p>
